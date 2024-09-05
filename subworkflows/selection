@@ -1,0 +1,42 @@
+include { fastp } from "../modules/fastp.nf"
+include { fastqc } from "../modules/fastqc.nf"
+include { bowtie, bowtie_index} from '../modules/bowtie.nf'
+
+workflow SELECTION {
+
+    // Initial selection of RPF reads for mapping
+    // Also outputs QC based on fastq information
+
+    take:
+    reads           // channel: [ sample_id, path(reads) ]
+    bowtie2_index   // channel: path(bowtie2/index/)
+    outdir          // channel: path()
+
+    main:
+    // Run FASTP
+    fastp(reads)
+
+    // Run FASTQC
+    fastqc(fastp.out.reads)
+
+    // Check if bowtie2 index needs to run
+    // create a new channel for either newly created index or existing index
+    bowtie2_index_ch = Channel.empty()
+    if (!path(bowtie2_index).exists()) {
+        // Run bowtie2 - index
+        bowtieIndex(fastp.out.reads, contaminants_fasta)
+        bowtie2_index_ch = bowtieIndex.out.bowtie2_index
+    } else {
+    bowtie2_index_ch = Channel.value(path(params.bowtie2_index))
+}
+    // Run bowtie2
+    bowtie2(fastp.out.reads, bowtie2_index_ch)
+
+    emit:
+    trimmed_reads = bowtie.out
+                            .map({key, file ->
+                            tuple( key,
+                                file.findAll({ it =~ /.*\.fastq\.gz$/ })
+                                )
+                            })
+}
