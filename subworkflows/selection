@@ -8,35 +8,36 @@ workflow SELECTION {
     // Also outputs QC based on fastq information
 
     take:
-    reads           // channel: [ sample_id, path(reads) ]
-    bowtie2_index   // channel: path(bowtie2/index/)
-    outdir          // channel: path()
+    reads               // Riboseq reads with associated sample ID in tuple format
+    bowtie2_index       // Precomputed contaminants index for bowtie2
+    contaminants_fasta  // Fasta file with rRNA, tRNA, and other contaminants
+    outdir              // Output directory
 
     main:
     // Run FASTP
-    fastp(reads)
+    fastp(reads, outdir)
+    // Gather output tuples into single list
+    fastp_output = fastp.out.reads.collect()
 
     // Run FASTQC
-    fastqc(fastp.out.reads)
+    fastqc(fastp_outputs, outdir)
 
     // Check if bowtie2 index needs to run
-    // create a new channel for either newly created index or existing index
-    bowtie2_index_ch = Channel.empty()
     if (!path(bowtie2_index).exists()) {
         // Run bowtie2 - index
-        bowtieIndex(fastp.out.reads, contaminants_fasta)
-        bowtie2_index_ch = bowtieIndex.out.bowtie2_index
+        bowtie_index(contaminants_fasta, outdir)
+        bowtie2_index_ch = bowtie_index.out.bowtie2_index
     } else {
-    bowtie2_index_ch = Channel.value(path(params.bowtie2_index))
-}
+    bowtie2_index_ch = value(path(params.bowtie2_index))
+    }
+
     // Run bowtie2
-    bowtie2(fastp.out.reads, bowtie2_index_ch)
+    bowtie2(fastp_output, bowtie2_index_ch, outdir)
+    // Gather output tuples into single list
+    rpf_reads = bowtie2.out.reads.collect()
+    samfiles = bowtie2.out.samfile.collect()
 
     emit:
-    trimmed_reads = bowtie.out
-                            .map({key, file ->
-                            tuple( key,
-                                file.findAll({ it =~ /.*\.fastq\.gz$/ })
-                                )
-                            })
+    rpf_reads   // Selected riboseq reads
+    samfiles    // Reads considered to be non-RPF
 }
