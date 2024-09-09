@@ -1,0 +1,39 @@
+include { star_index; align; samtools } from '../modules/star.nf'
+
+workflow ALIGNMENT {
+
+/*
+Aligns the data in two STAR modes for ORFquant and
+PRICE respectively and creates an index for the ORFquant bam
+*/
+
+    take:
+    trimmed_reads       // Output from SELECTION subworkflow
+    genome              // Reference genome used for STAR index
+    star_index_path     // Location of precomputed STAR index
+    gtf                 // Transcriptome used for STAR
+    run_price           // Boolean: whether to run PRICE
+    run_orfquant    // Boolean: whether to run ORFquant
+    outdir              // Output directory
+
+    main:
+
+    // Check if STAR index needs to run
+    if (!path(star_index_path).exists()) {
+        // Run STAR - index
+        star_index(genome, outdir)
+        star_index_ch = star_index.out.star_index
+    } else {
+    star_index_ch = value(path(star_index_path))
+    }
+
+    align(fastq, star_index, gtf)
+    // Wait untill all STAR runs are completed
+    bam_list = align.out.bam.collect()
+    bam_list_end2end = align.out.bam_end2end.collect()
+    samtools_index(bam_list)
+    
+    emit:
+    bam_list         // bam files for ORFquant
+    bam_list_end2end // bam files for PRICE
+}
