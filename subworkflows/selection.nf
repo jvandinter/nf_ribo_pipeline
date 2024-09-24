@@ -1,6 +1,5 @@
-include { fastp } from "../modules/fastp.nf"
+include { trimming } from "../modules/fastp.nf"
 include { fastqc } from "../modules/fastqc.nf"
-include { bowtie, bowtie_index} from '../modules/bowtie.nf'
 
 workflow SELECTION {
 
@@ -15,12 +14,10 @@ workflow SELECTION {
 
     main:
     // Run FASTP
-    fastp(reads, outdir)
+    trimming(reads, outdir)
     // Gather output tuples into single list
-    fastp_output = fastp.out.reads.collect()
 
     // Run FASTQC
-    fastqc(fastp_outputs, outdir)
 
     // Check if bowtie2 index needs to run
     if (!path(bowtie2_index).exists()) {
@@ -32,7 +29,6 @@ workflow SELECTION {
     }
 
     // Run bowtie2
-    bowtie2(fastp_output, bowtie2_index_ch, outdir)
     // Gather output tuples into single list
     rpf_reads = bowtie2.out.reads.collect()
     samfiles = bowtie2.out.samfile.collect()
