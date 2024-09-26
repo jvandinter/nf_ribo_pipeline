@@ -3,29 +3,31 @@ process trimming {
 
     // Remove low-quality and short reads from fastq file
 
-    tag "${sample_id}"
+    tag "${meta.sample_id}"
     label "trimming"
     publishDir "${outdir}/fastp", mode: 'copy'
 
     input:
-    tuple val(sample_id),path(reads)    // Input FASTQ reads
+    tuple val(meta),val(reads)    // Input FASTQ reads
     val outdir                          // Output directory
 
     output:
-    tuple val(sample_id), path('*.fastp.fastq.gz') , emit: reads
-    path('*.json')
-    path('*.html')
-    path('*.log')
+    tuple val(meta), path("${meta.sample_id}/${meta.sample_id}.fastp.fastq.gz") , emit: reads
+    path("${meta.sample_id}/${meta.sample_id}.json")
+    path("${meta.sample_id}/${meta.sample_id}.html")
+    path("${meta.sample_id}/${meta.sample_id}.log")
 
     script:
+    def sample_id = meta.sample_id
     """
+    mkdir "${sample_id}"
     fastp \
-    --thread $tasks.cpu \
+    --thread $task.cpus \
     --in1 "${reads}" \
-    --out1 "${sample_id}.fastp.fastq.gz" \
-    --json ${sample_id}.fastp.json \
-    --html ${sample_id}.fastp.html \
+    --out1 "${sample_id}/${sample_id}.fastp.fastq.gz" \
+    --json ${sample_id}/${sample_id}.json \
+    --html ${sample_id}/${sample_id}.html \
     --length_required 25 \
-    2> >(tee ${sample_id}.fastp.log >&2)
+    2> >(tee ${sample_id}/${sample_id}.log >&2)
     """
 }

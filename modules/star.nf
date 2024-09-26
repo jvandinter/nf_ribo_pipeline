@@ -2,7 +2,7 @@ process star_index {
 
     // Create index for STAR
 
-    label "STAR index"
+    label "STAR_index"
     publishDir "${outdir}/star_index/", mode: 'copy'
 
     input: 
@@ -11,13 +11,14 @@ process star_index {
     val gtf         // Transcriptome GTF file
 
     output:
-    path 'star_index', emit: star_index_path
+    val "star_index", emit: star_index_path
+    path "star_index/*"
 
     script:
     """
     STAR \
     --runMode genomeGenerate \
-    --runThreadN $task.cpu \
+    --runThreadN $task.cpus \
     --sjdbGTFfile ${gtf} \
     --sjdbOverhang 29 \
     --genomeDir "star_index" \
@@ -29,20 +30,20 @@ process star {
 
     // Aligns RPF reads to the 
 
-    tag ${sample_id}
+    tag ${meta.sample_id}
     label "alignment"
     publishDir "${outdir}/star/", mode: 'copy'
 
     input: 
-    tuple val(sample_id), path(reads)   // Trimmed RPF reads
-    val outdir                          // Output directory
-    val gtf                             // Transcriptome GTF file
-    val star_index                      // STAR index
-    val run_price                       // Do we need to generate the PRICE bam
+    tuple val(meta), path(reads)   // Trimmed RPF reads
+    val outdir                     // Output directory
+    val gtf                        // Transcriptome GTF file
+    val star_index_path            // STAR index
+    val run_price                  // Do we need to generate the PRICE bam
 
     output:
     path("${sample_id}/${sample_id}.*")
-    tuple val("${sample_id}"), path("${sample_id}/${sample_id}.*.bam"), emit: bam
+    tuple val(meta), path("${meta.sample_id}/${meta.sample_id}.*.bam"), emit: bam
 
     script:
     // GROOVY START
@@ -106,24 +107,4 @@ process star {
 
     }
 
-}
-
-process samtools_index {
-
-    tag ${sample_id}
-    label "samtools"
-    publishDir "${outdir}/star/", mode: 'copy'
-
-    input:
-    tuple val(sample_id), path(bam)
-
-    output:
-    path("${sample_id}/${sample_id}.*")
-
-    script:
-    """
-    samtools index \
-        -@ $task.cpus \
-        ${bam}
-    """
 }
