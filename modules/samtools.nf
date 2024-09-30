@@ -1,5 +1,6 @@
 
 process contaminants_check {
+
     // Use SAMTOOLS to output the reads per contaminant for QC
 
     tag "${meta.sample_id}"
@@ -62,24 +63,44 @@ process contaminants_check {
     """
 }
 
-/* 
-process samtools_index {
+process samtools {
 
-    tag ${sample_id}
+    // Get mapping stats, sorted bam and .bai with SAMTOOLS
+
+    tag "${meta.sample_id}"
     label "samtools"
     publishDir "${outdir}/star/", mode: 'copy'
 
-    input:
+    input: 
     tuple val(sample_id), path(bam)
+    val keep_sam
+    val outdir
 
     output:
-    path("${sample_id}/${sample_id}.*")
+    tuple val(sample_id), path("${sample_id}/${sample_id}*.Aligned.sortedByCoord.out.bam"), emit:sorted_bam
+    path "${sample_id}/${sample_id}*" // Output all files to publishDir
+
 
     script:
+    def new_bam = "${bam.name.replaceFirst('.Aligned.out.bam', '.Aligned.sortedByCoord.out.bam')}"
+
     """
-    samtools index \
-        -@ $task.cpus \
-        ${bam}
+    mkdir -p ${sample_id}
+    mkdir -p tmp/
+    # Sort BAM
+    samtools sort \
+    -@ $task.cpus \
+    -l 9 \
+    -o "${sample_id}/${new_bam}" \
+    -T "tmp/" \
+    "${bam}"
+
+    rm -r tmp/
+
+    # Create mapping statistics with samtools
+    samtools stats -@ $task.cpus "${sample_id}/${new_bam}" > "${sample_id}/${sample_id}_stats.txt"
+
+    # Index the bam with samtools
+    samtools index -@ $task.cpus "${sample_id}/${new_bam}"
     """
 }
- */

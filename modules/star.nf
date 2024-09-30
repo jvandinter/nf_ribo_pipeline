@@ -26,11 +26,11 @@ process star_index {
     """
 }
 
-process star {
+process align {
 
     // Aligns RPF reads to the 
 
-    tag ${meta.sample_id}
+    tag "${meta.sample_id}"
     label "alignment"
     publishDir "${outdir}/star/", mode: 'copy'
 
@@ -40,17 +40,39 @@ process star {
     val gtf                        // Transcriptome GTF file
     val star_index_path            // STAR index
     val run_price                  // Do we need to generate the PRICE bam
+    val run_orfquant               // Do we need to generate the normal bam
 
     output:
-    path("${sample_id}/${sample_id}.*")
-    tuple val(meta), path("${meta.sample_id}/${meta.sample_id}.*.bam"), emit: bam
+    path("${meta.sample_id}/${meta.sample_id}.*")
+    tuple val(meta), path("${meta.sample_id}/${meta.sample_id}.local.*.bam"), optional: true, emit: bams
+    tuple val(meta), path("${meta.sample_id}/${meta.sample_id}.end2end.*.bam"), optional: true, emit: bams_end2end
 
     script:
-    // GROOVY START
-    def star_params = "--"
+    def sample_id = meta.sample_id
+    def star_params = "--readFilesCommand zcat " +
+                      "--runDirPerm All_RWX " +
+                      "--twopassMode Basic " +
+                      "--outFilterMismatchNmax 2" +
+                      "--outFilterMultimapNmax 20" +
+                      "--outSAMattributes All" +
+                      "--limitOutSJcollapsed 10000000" +
+                      "--limitIObufferSize=300000000" +
+                      "--outFilterType BySJout" +
+                      "--alignSJoverhangMin 1000" +
+                      "--outTmpKeep None"
 
-    def star_params_price = ""
-    // GROOVY END
+    def star_params_end2end = "--readFilesCommand zcat " +
+                              "--runDirPerm All_RWX" +
+                              "--twopassMode Basic" +
+                              "--outFilterMismatchNmax 2" +
+                              "--outFilterMultimapNmax 20" +
+                              "--outSAMattributes All" +
+                              "--limitOutSJcollapsed 10000000" +
+                              "--limitIObufferSize=300000000" +
+                              "--outFilterType BySJout" +
+                              "--alignSJoverhangMin 1000" +
+                              "--alignEndsType EndToEnd" +
+                              "--outTmpKeep None"
 
     // Check which BAM files need to be generated
     if (run_price == true) {
@@ -58,37 +80,37 @@ process star {
         """
         # ORFquant BAM
         STAR \
-        --genomeDir ${star_index} \
+        --genomeDir ${star_index_path} \
         --sjdbGTFfile ${gtf} \
         --readFilesIn ${reads} \
         --outSAMattrRGline ID:${sample_id} LB:${sample_id} PL:IllUMINA SM:${sample_id}
-        --outFileNamePrefix "${sample_id}/${sample_id}." \
+        --outFileNamePrefix "${sample_id}/${sample_id}.local." \
         --runThreadN $task.cpus \
         ${star_params}
 
         # PRICE BAM
         STAR \
-        --genomeDir ${star_index} \
+        --genomeDir ${star_index_path} \
         --sjdbGTFfile ${gtf} \
         --readFilesIn ${reads} \
         --outSAMattrRGline ID:${sample_id} LB:${sample_id} PL:IllUMINA SM:${sample_id}
         --outFileNamePrefix "${sample_id}/${sample_id}.end2end." \
         --runThreadN $task.cpus \
-        ${star_params_price}
+        ${star_params_end2end}
         """
 
-    } if (run_price == true && run_orfquant == false) {
+    } else if (run_price == true && run_orfquant == false) {
 
         """
         # PRICE BAM
         STAR \
-        --genomeDir ${star_index} \
+        --genomeDir ${star_index_path} \
         --sjdbGTFfile ${gtf} \
         --readFilesIn ${reads} \
         --outSAMattrRGline ID:${sample_id} LB:${sample_id} PL:IllUMINA SM:${sample_id}
         --outFileNamePrefix "${sample_id}/${sample_id}.end2end." \
         --runThreadN $task.cpus \
-        ${star_params_price}
+        ${star_params_end2end}
         """
 
     } else {
@@ -96,7 +118,7 @@ process star {
         """
         # ORFquant BAM
         STAR \
-        --genomeDir ${star_index} \
+        --genomeDir ${star_index_path} \
         --sjdbGTFfile ${gtf} \
         --readFilesIn ${reads} \
         --outSAMattrRGline ID:${sample_id} LB:${sample_id} PL:IllUMINA SM:${sample_id}
