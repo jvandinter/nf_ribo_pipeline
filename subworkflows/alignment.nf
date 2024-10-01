@@ -19,7 +19,7 @@ PRICE respectively and creates an index for the ORFquant bam
     main:
 
     // List of files to check
-    def filesToCheck = [
+    def files_to_check = [
         'chrLength.txt',
         'chrStart.txt',
         'geneInfo.tab',
@@ -38,11 +38,11 @@ PRICE respectively and creates an index for the ORFquant bam
     ]
 
     // Check if STAR index exists
-    def fileFound = false
-    for (file in filesToCheck) {
-        def filePath = file(star_index_path, file)
-        if (filePath.exists()) {
-            fileFound = true
+    def index_present = false
+    for (file in files_to_check) {
+        def file_path = file(star_index_path, file)
+        if (file_path.exists()) {
+            index_present = true
             star_index_ch = star_index_path
             break
         } else {

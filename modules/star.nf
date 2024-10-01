@@ -50,32 +50,44 @@ process align {
     script:
     def sample_id = meta.sample_id
     def star_params = "--readFilesCommand zcat " +
+                      "--outSAMtype BAM Unsorted " +
                       "--runDirPerm All_RWX " +
                       "--twopassMode Basic " +
-                      "--outFilterMismatchNmax 2" +
-                      "--outFilterMultimapNmax 20" +
-                      "--outSAMattributes All" +
-                      "--limitOutSJcollapsed 10000000" +
-                      "--limitIObufferSize=300000000" +
-                      "--outFilterType BySJout" +
-                      "--alignSJoverhangMin 1000" +
+                      "--outFilterMismatchNmax 2 " +
+                      "--outFilterMultimapNmax 20 " +
+                      "--outSAMattributes All " +
+                      "--outFilterType BySJout " +
+                      "--alignSJoverhangMin 1000 " +
                       "--outTmpKeep None"
 
     def star_params_end2end = "--readFilesCommand zcat " +
-                              "--runDirPerm All_RWX" +
-                              "--twopassMode Basic" +
-                              "--outFilterMismatchNmax 2" +
-                              "--outFilterMultimapNmax 20" +
-                              "--outSAMattributes All" +
-                              "--limitOutSJcollapsed 10000000" +
-                              "--limitIObufferSize=300000000" +
-                              "--outFilterType BySJout" +
-                              "--alignSJoverhangMin 1000" +
-                              "--alignEndsType EndToEnd" +
+                              "--outSAMtype BAM Unsorted " +
+                              "--runDirPerm All_RWX " +
+                              "--twopassMode Basic " +
+                              "--outFilterMismatchNmax 2 " +
+                              "--outFilterMultimapNmax 20 " +
+                              "--outSAMattributes All " +
+                              "--outFilterType BySJout " +
+                              "--alignSJoverhangMin 1000 " +
+                              "--alignEndsType EndToEnd " +
                               "--outTmpKeep None"
 
     // Check which BAM files need to be generated
-    if (run_price == true) {
+    if (run_price == true && run_orfquant == false) {
+
+        """
+        # PRICE BAM
+        STAR \
+        --genomeDir ${star_index_path} \
+        --sjdbGTFfile ${gtf} \
+        --readFilesIn ${reads} \
+        --outSAMattrRGline ID:${sample_id} LB:${sample_id} PL:IllUMINA SM:${sample_id} \
+        --outFileNamePrefix "${sample_id}/${sample_id}.end2end." \
+        --runThreadN $task.cpus \
+        ${star_params_end2end}
+        """
+
+    } else if (run_price == true && run_orfquant == true) {
 
         """
         # ORFquant BAM
@@ -83,7 +95,7 @@ process align {
         --genomeDir ${star_index_path} \
         --sjdbGTFfile ${gtf} \
         --readFilesIn ${reads} \
-        --outSAMattrRGline ID:${sample_id} LB:${sample_id} PL:IllUMINA SM:${sample_id}
+        --outSAMattrRGline ID:${sample_id} LB:${sample_id} PL:IllUMINA SM:${sample_id} \
         --outFileNamePrefix "${sample_id}/${sample_id}.local." \
         --runThreadN $task.cpus \
         ${star_params}
@@ -93,27 +105,13 @@ process align {
         --genomeDir ${star_index_path} \
         --sjdbGTFfile ${gtf} \
         --readFilesIn ${reads} \
-        --outSAMattrRGline ID:${sample_id} LB:${sample_id} PL:IllUMINA SM:${sample_id}
+        --outSAMattrRGline ID:${sample_id} LB:${sample_id} PL:IllUMINA SM:${sample_id} \
         --outFileNamePrefix "${sample_id}/${sample_id}.end2end." \
         --runThreadN $task.cpus \
         ${star_params_end2end}
         """
 
-    } else if (run_price == true && run_orfquant == false) {
-
-        """
-        # PRICE BAM
-        STAR \
-        --genomeDir ${star_index_path} \
-        --sjdbGTFfile ${gtf} \
-        --readFilesIn ${reads} \
-        --outSAMattrRGline ID:${sample_id} LB:${sample_id} PL:IllUMINA SM:${sample_id}
-        --outFileNamePrefix "${sample_id}/${sample_id}.end2end." \
-        --runThreadN $task.cpus \
-        ${star_params_end2end}
-        """
-
-    } else {
+    } else if (run_price == false && run_orfquant == true) {
 
         """
         # ORFquant BAM
@@ -121,7 +119,7 @@ process align {
         --genomeDir ${star_index_path} \
         --sjdbGTFfile ${gtf} \
         --readFilesIn ${reads} \
-        --outSAMattrRGline ID:${sample_id} LB:${sample_id} PL:IllUMINA SM:${sample_id}
+        --outSAMattrRGline ID:${sample_id} LB:${sample_id} PL:IllUMINA SM:${sample_id} \
         --outFileNamePrefix "${sample_id}/${sample_id}." \
         --runThreadN $task.cpus \
         ${star_params}

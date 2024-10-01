@@ -72,18 +72,17 @@ process samtools {
     publishDir "${outdir}/star/", mode: 'copy'
 
     input: 
-    tuple val(sample_id), path(bam)
-    val keep_sam
-    val outdir
+    tuple val(meta), path(bam) // Aligned BAMs
+    val outdir                      // Output directory
 
     output:
-    tuple val(sample_id), path("${sample_id}/${sample_id}*.Aligned.sortedByCoord.out.bam"), emit:sorted_bam
-    path "${sample_id}/${sample_id}*" // Output all files to publishDir
+    tuple val(meta), path("${meta.sample_id}/${meta.sample_id}*.Aligned.sortedByCoord.out.bam"), emit:sorted_bam
+    path "${meta.sample_id}/${meta.sample_id}*" // Output all files to publishDir
 
 
     script:
     def new_bam = "${bam.name.replaceFirst('.Aligned.out.bam', '.Aligned.sortedByCoord.out.bam')}"
-
+    def sample_id = meta.sample_id
     """
     mkdir -p ${sample_id}
     mkdir -p tmp/
