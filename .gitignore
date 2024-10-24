@@ -17,6 +17,9 @@ test/results/*
 test/log/*
 test/documentation/*.txt
 test/scripts/*
+test/output/*
+analysis/*
+data/*
 
 #Ignore nextflow work and logs
 work/*

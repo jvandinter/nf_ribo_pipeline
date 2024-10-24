@@ -1,4 +1,5 @@
-include { star_index; align; samtools } from '../modules/star.nf'
+include { star_index; align } from '../modules/star.nf'
+include { samtools; samtools as samtools_end2end } from '../modules/samtools.nf'
 
 workflow ALIGNMENT {
 
@@ -19,7 +20,7 @@ PRICE respectively and creates an index for the ORFquant bam
     main:
 
     // List of files to check
-    def files_to_check = [
+    def star_index_files = [
         'chrLength.txt',
         'chrStart.txt',
         'geneInfo.tab',
@@ -37,31 +38,52 @@ PRICE respectively and creates an index for the ORFquant bam
         'transcriptInfo.tab'
     ]
 
-    // Check if STAR index exists
-    def index_present = false
-    for (file in files_to_check) {
-        def file_path = file(star_index_path, file)
-        if (file_path.exists()) {
-            index_present = true
-            star_index_ch = star_index_path
-            break
-        } else {
-            star_index(genome, outdir)
-            star_index_ch = star_index.out.star_index_path
+    // Check if the STAR index files exist
+    def star_index_files_exist = star_index_files.every { filename ->
+            file("${star_index_path}/${filename}").exists()
         }
+    log.info "All STAR index files exist: ${star_index_files_exist}"
+
+    if (star_index_files_exist == false) {
+        log.warn "Some STAR index files are missing. Running STAR indexing."
+        // Run STAR - index if any of the index files are missing
+        star_index(genome, gtf, outdir)
+        star_index_ch = star_index.out.star_index
+    } else {
+        star_index_ch = "${star_index_path}"
+        log.info "Using existing STAR index: ${star_index_path}"
     }
 
-    align(rpf_reads, outdir, gtf, star_index_ch, run_price, run_orfquant)
+    align(rpf_reads, 
+          outdir,
+          gtf,
+          star_index_ch,
+          run_price,
+          run_orfquant)
 
-    // Wait untill all STAR runs are completed
-    bam_list_end2end = align.out.bams_end2end.collect()
-
-    if (params.run_orfquant = true) {
+    if (run_orfquant == true) {
         samtools(align.out.bams, outdir)
-        bam_list = samtools.out.bams.collect()
+        bam_list = samtools.out.sorted_bam
     }
-    
+
+    if (run_price == true) {
+        samtools_end2end(align.out.bams_end2end, outdir)
+        bam_list_end2end = samtools_end2end.out.sorted_bam
+
+        price_paths = samtools_end2end.out.bam_files.collect().flatten()
+                    .map { it -> it.toString() } // Change paths to strings
+
+        // Store gtflist to workdir
+        price_filelist = price_paths.collectFile(
+            name: 'bams.bamlist',
+            newLine: true, sort: true )
+    } else {
+        samtools(align.out.bams, outdir)
+        bam_list = samtools.out.sorted_bam
+    }
+
     emit:
-    bam_list         // bam files for ORFquant
+    bam_list // bam files for ORFquant
     bam_list_end2end // bam files for PRICE
+    price_filelist // list for PRICE
 }

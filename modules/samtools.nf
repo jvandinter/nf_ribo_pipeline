@@ -16,6 +16,7 @@ process contaminants_check {
     val keep_sam                            // Boolean, keep big SAM file for debugging
 
     output:
+
     path "${meta.sample_id}/${meta.sample_id}_*.txt", emit: contaminants_bowtie2
 
     script:
@@ -77,6 +78,7 @@ process samtools {
 
     output:
     tuple val(meta), path("${meta.sample_id}/${meta.sample_id}*.Aligned.sortedByCoord.out.bam"), emit:sorted_bam
+    path "${meta.sample_id}/${meta.sample_id}*.Aligned.sortedByCoord.out.bam", emit:bam_files
     path "${meta.sample_id}/${meta.sample_id}*" // Output all files to publishDir
 
 

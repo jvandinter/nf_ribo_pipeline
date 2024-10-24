@@ -6,9 +6,9 @@ process star_index {
     publishDir "${outdir}/star_index/", mode: 'copy'
 
     input: 
-    val fasta       // Reference genome fasta file
-    val outdir      // Output directory
+    val genome       // Reference genome fasta file
     val gtf         // Transcriptome GTF file
+    val outdir      // Output directory
 
     output:
     val "star_index", emit: star_index_path
@@ -22,7 +22,7 @@ process star_index {
     --sjdbGTFfile ${gtf} \
     --sjdbOverhang 29 \
     --genomeDir "star_index" \
-    --genomeFastaFiles ${fasta}
+    --genomeFastaFiles ${genome}
     """
 }
 
@@ -66,7 +66,7 @@ process align {
                               "--twopassMode Basic " +
                               "--outFilterMismatchNmax 2 " +
                               "--outFilterMultimapNmax 20 " +
-                              "--outSAMattributes All " +
+                              "--outSAMattributes MD NH " +
                               "--outFilterType BySJout " +
                               "--alignSJoverhangMin 1000 " +
                               "--alignEndsType EndToEnd " +

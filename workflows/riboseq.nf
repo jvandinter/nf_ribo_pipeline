@@ -14,64 +14,103 @@ Main steps:
 7. EXPRESSION: Analyze ORF expression
 */
 
-include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
-include { printStartLogs} from "./modules/helper_functions.nf"
-include { SELECTION } from './subworkflows/selection.nf'
-include { ALIGNMENT } from './subworkflows/alignment.nf'
-include { RIBOQC } from './subworkflows/riboqc.nf'
-include { ORFQUANT } from './subworkflows/orfquant.nf'
-include { PRICE } from './subworkflows/price.nf'
-include { EXPRESSION } from './subworkflows/expression.nf'
-include { ANNOTATION } from './subworkflows/annotation.nf'
+//include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
+include { SELECTION } from '../subworkflows/selection.nf'
+include { ALIGNMENT } from '../subworkflows/alignment.nf'
+//include { RIBOQC } from '../subworkflows/riboqc.nf'
+//include { ORFQUANT } from '../subworkflows/orfquant.nf'
+include { PRICE } from '../subworkflows/price.nf'
+/* include { EXPRESSION } from '../subworkflows/expression.nf'
+include { ANNOTATION } from '../subworkflows/annotation.nf' */
+
+// Define input channel
+ch_input = Channel.fromPath(params.input)
+    .splitCsv(header:true)
+    .map { row -> 
+        def meta = [:]
+        meta.sample_id = row.sample_id
+        meta.subject_id = row.subject_id
+        meta.sample_type = row.sample_type
+        meta.sequence_type = row.sequence_type
+        meta.file_type = row.file_type
+        // Use 'realpath' to resolve the symlink
+        def resolvedPath = "realpath ${row.filename_1}".execute().text.trim()
+        
+        [ meta, file(resolvedPath) ]
+    }
+
+// Filter for ribo-seq fastq files
+ch_reads = ch_input.filter { meta, fastq ->
+        meta.file_type == "fastq" && meta.sequence_type == "ribo"
+    }
 
 workflow RIBOSEQ {
 
-    Channel.fromPath(,checkIfExists = true)
     // Validate input parameters
-    validateParameters()
+    // validateParameters()
 
     // Print summary of supplied parameters
-    log.info paramsSummaryLog(workflow)
+    // log.info paramsSummaryLog(workflow)
 
     // Validate files
 
-    //Create input channel from samplesheet
-    ch_input = fromList(samplesheetToList(params.input, "assets/schema_input.json"))
-
-    //Get channel for reads
-    ch_fastq = ch_input
-        .filter { meta, filename_1
-            meta.filetype == "fastq" && meta.sequence == "ribo"
-        }
-        .map { meta, fastq_1, ->
-                meta, [ fastq_1 ]
-        }
-
-    reads = ch_reads.reads
     // TODO: handle annotations from samplesheet
 
-    SELECTION(reads,
-              params.contaminants_fasta,
-              params.outdir)
-    
-    ALIGNMENT(SELECTION.out.rpf_reads,
-              params.genome,
-              params.gtf,
-              params.star_index_path,
-              params.run_price,
-              params.run_orfquant,
-              params.outdir)
-    
-    RIBOQC(ALIGNMENT.out.bam_files, gtf_ch)
-    
+    SELECTION(
+        ch_reads,
+        params.bowtie2_index_path,
+        params.contaminants_fasta,
+        params.keep_sam,
+        params.outdir
+        )
+
+    rpf_reads = SELECTION.out.rpf_reads
+
+    ALIGNMENT(
+        rpf_reads,
+        params.reference_fasta,
+        params.star_index_path,
+        params.reference_gtf,
+        params.run_price,
+        params.run_orfquant,
+        params.outdir
+        )
+
+    orfquant_bams = ALIGNMENT.out.bam_list
+    price_bams = ALIGNMENT.out.bam_list_end2end
+    bamlist = ALIGNMENT.out.price_filelist
+
+    //def orfquant_annotation_exists = params.orfquant_annotation.exists()
+/*
+    RIBOQC(
+           orfquant_annotation_exists,
+           orfquant_bams,
+           params.reference_gtf,
+           params.reference_twobit,
+           params.outdir,
+           params.orfquant_prefix,
+           contaminants,
+           star_output,
+           samtools_output
+           )
+
+
     if (params.run_orfquant) {
-        ORFQUANT(ALIGNMENT.out.bam_files, gtf_ch)
+        ORFQUANT(RIBOQC.out.for_orfquant_files)
     }
-    
+*/
     if (params.run_price) {
-        PRICE(ALIGNMENT.out.end2end_bam_files, params.price_index)
+        PRICE(
+            bamlist,
+            params.price_index_path,
+            params.reference_fasta,
+            params.reference_gtf,
+            params.outdir,
+            params.price_prefix,
+            params.gedi_exec_loc
+            )
     }
-    
+/*
     ANNOTATION(
         ORFQUANT.out.orfquant_results,
         PRICE.out.price_results,
@@ -85,6 +124,6 @@ workflow RIBOSEQ {
         ALIGNMENT.out.bam_files,
         params.run_orfquant,
         params.run_price
-    )
-}
+    ) */
+
 }
