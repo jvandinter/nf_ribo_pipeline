@@ -1,4 +1,4 @@
-include { price_orfcall; price_index } from '../modules/price.nf'
+include { price; price_index } from '../modules/price.nf'
 
 workflow PRICE {
 
