@@ -1,9 +1,0 @@
-include { riboseqc; orfquant_call; orfquant_annotate } from '../modules/orfquant.nf'
-
-workflow ORFQUANT {
-    take:
-
-    main:
-
-    emit:
-}
