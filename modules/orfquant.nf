@@ -50,6 +50,7 @@ process orfquant {
     ${pandoc_dir} \
     ${orfquant_annot_package} \
     ${package_install_loc} \
-    ${outdir}
+    "TRUE"
+    # Only set to TRUE for testing purposes
     """
 }

@@ -46,19 +46,6 @@ def check_files(name, path, type) {
 
 def checkInputFiles() {
     //Check inputs
-    default_strand =  "${params.outdir}/check_strandedness/strandedness_all.txt"
-    if (!params.qc && ( params.align || params.assembly )) {
-        if (!params.strand_info && file(default_strand, type : "file").exists()) {
-            log.info "strand info   : ${default_strand}".stripIndent()
-        } else if (params.strand_info && file(params.strand_info, type : "file").exists()) {
-            log.info "strand info   : ${params.strand_info}".stripIndent()
-        } else {
-            error  """
-                No strand information found in ${default_strand}
-                If `qc = false`, define your strandedness info file with `strand_info` in `params.config`
-                """.stripIndent()
-        }
-    }
 
     // Locate bams
     default_bams = "${params.outdir}/star/**/*.Aligned.sortedByCoord.out.bam"
@@ -83,24 +70,23 @@ def checkInputFiles() {
         check_files("kallisto_index", params.kallisto_index, "file")
     }
 
-    // Check star_index_basedir
-    if (params.align){
-        check_files("star_index_basedir", params.star_index_basedir, "dir")
-    }
-
     // Check references for build_annotaiton
     if (params.build_annotation) {
         check_files("twobit", "${params.twobit}*", "file")
     }
 
-    // Check expression parameters
-    if (params.expression) {
-        assert params.expression_mode in ["sq", "sa", "sqfc", "safc"], "`expression_mode` must be one of the following: sq, sa, sqfc, safc"
-
-        if (!bam_avail & (params.expression_mode != "sq")) {
-            log.info "expression mode  : ${params.expression_mode} --> sq [forced to quasi-mapping, no bam avail]"
-        }
-    }
-
     log.info "\n==========================\n"
+}
+
+process write_psites_paths {
+    input:
+    val collected_paths
+
+    output:
+    path "file_paths.txt", emit: psites_file_channel
+
+    script:
+    """
+    printf "%s\n" "${collected_paths.join('\n')}" > file_paths.txt
+    """
 }

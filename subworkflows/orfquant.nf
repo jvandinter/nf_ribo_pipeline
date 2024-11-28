@@ -1,17 +1,5 @@
 include { prepare_orfquant; orfquant } from '../modules/orfquant.nf'
-
-process writePsitesPaths {
-    input:
-    val collected_paths
-
-    output:
-    path "psites_paths.txt", emit: psites_file_channel
-
-    script:
-    """
-    printf "%s\n" "${collected_paths.join('\n')}" > psites_paths.txt
-    """
-}
+include { write_psites_paths } from '../modules/helperFunctions.nf'
 
 workflow ORFQUANT {
 
@@ -30,9 +18,9 @@ workflow ORFQUANT {
     .map { meta, path -> path } // Extract only the paths
     .collect()                   // Collect all paths into a single list
     .set { collected_paths }     // Set this list into a new channel
-    writePsitesPaths(collected_paths)
+    write_psites_paths(collected_paths)
 
-    prepare_orfquant(writePsitesPaths.out.psites_file_channel,
+    prepare_orfquant(write_psites_paths.out.psites_file_channel,
                      orfquant_prefix,
                      outdir)
 
@@ -45,6 +33,6 @@ workflow ORFQUANT {
              outdir)
 
     emit:
-    orfquant.out.gtf
+    orfquant.out.orfquant_gtf
 
 }

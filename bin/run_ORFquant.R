@@ -16,13 +16,12 @@ cpu <- args[4]
 pandoc_dir <- args[5]
 annotation_package <- args[6]
 package_install_loc <- args[7]
-outdir <- args[8]
+is_test <- args[8]
 
 paths <- c(package_install_loc, .libPaths())
 .libPaths(paths)
 
 # Define variables --------------------------------------------------------
-html_report <- paste0(pool_id,"_report.html")
 ORFquant_output_file <- paste0(pool_id, "_final_ORFquant_results")
 ORFquant_plot_data <- paste0(ORFquant_output_file, "_plots/",
                              pool_id, "_ORFquant_plots_RData")
@@ -30,29 +29,34 @@ find_pandoc(dir = pandoc_dir)
 
 # Define functions --------------------------------------------------------
 ORFquant_analysis <- function(for_ORFquant_file,
+                              sample_id,
                               ORFquant_output_file,
                               ORFquant_plot_data,
                               rannot,
                               cpu,
-                              outdir,
                               html_report,
-                              sample_id) {
-
-  print(for_ORFquant_file)
+                              test = FALSE) {
+  if(test == TRUE) {
+    gene_names <- c("MYCN", "TP53", "HCP5")
+    gene_ids <- c("ENSG00000134323", "ENSG00000141510", "ENSG00000206337")
+  } else {
+    gene_names <- NA
+    gene_ids <- NA
+  }
 
   if (!file.exists(ORFquant_output_file)) {
 
     run_ORFquant(for_ORFquant_file = for_ORFquant_file,
       annotation_file = rannot,
       n_cores = cpu,
-      prefix = outdir,
-      gene_name = NA,
-      gene_id = NA,
+      prefix = pool_id,
+      gene_name = gene_names,
+      gene_id = gene_ids,
       genomic_region = NA,
       write_temp_files = TRUE,
       write_GTF_file = TRUE,
       write_protein_fasta = TRUE,
-      interactive = TRUE,
+      interactive = FALSE,
       stn.orf_find.all_starts = TRUE,
       stn.orf_find.nostarts = FALSE,
       stn.orf_find.start_sel_cutoff = NA,
@@ -72,10 +76,6 @@ ORFquant_analysis <- function(for_ORFquant_file,
     annotation_file = rannot
   )
 
-  create_ORFquant_html_report(input_files = ORFquant_plot_data,
-    input_sample_name = sample_id,
-    output_file = html_report
-  )
 }
 
 # Run script --------------------------------------------------------------
@@ -85,9 +85,10 @@ if (!require(basename(annotation_package), character.only = TRUE)) {
 }
 
 ORFquant_analysis(for_ORFquant_file = for_ORFquant_file,
+                  sample_id = pool_id,
                   ORFquant_output_file = ORFquant_output_file,
                   ORFquant_plot_data = ORFquant_plot_data,
                   rannot = rannot,
                   cpu = cpu,
                   html_report = html_report,
-                  sample_id = sample_id)
+                  test = is_test)
