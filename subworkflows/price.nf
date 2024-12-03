@@ -40,7 +40,9 @@ workflow PRICE {
           outdir)
     }
 
+    price_orfs = price.out.price_orfs
+
     emit:
-    price.out.price_orfs
+    price_orfs
 
 }

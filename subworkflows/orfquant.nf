@@ -30,9 +30,12 @@ workflow ORFQUANT {
              pandoc_dir,
              orfquant_annot_package,
              package_install_loc,
-             outdir)
+             outdir
+             )
+
+    orfquant_orfs = orfquant.out.orfquant_gtf
 
     emit:
-    orfquant.out.orfquant_gtf
+    orfquant_orfs
 
 }

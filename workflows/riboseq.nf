@@ -10,18 +10,18 @@ Main steps:
 3. RIBOQC: Quality control of Riboseq data
 4. ORFQUANT: ORF quantification (optional)
 5. PRICE: Alternative ORF calling method (optional)
-6. ANNOTATION: Annotate identified ORFs
-7. EXPRESSION: Analyze ORF expression
+6. EXPRESSION: Analyze identified ORF expression
+7. ANNOTATION: Annotate identified ORFs
 */
 
 //include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 include { SELECTION } from '../subworkflows/selection.nf'
 include { ALIGNMENT } from '../subworkflows/alignment.nf'
-//include { RIBOQC } from '../subworkflows/riboqc.nf'
-//include { ORFQUANT } from '../subworkflows/orfquant.nf'
+include { RIBOQC } from '../subworkflows/riboqc.nf'
+include { ORFQUANT } from '../subworkflows/orfquant.nf'
 include { PRICE } from '../subworkflows/price.nf'
-/* include { EXPRESSION } from '../subworkflows/expression.nf'
-include { ANNOTATION } from '../subworkflows/annotation.nf' */
+include { EXPRESSION } from '../subworkflows/expression.nf'
+//include { ANNOTATION } from '../subworkflows/annotation.nf'
 
 // Define input channel
 ch_input = Channel.fromPath(params.input)
@@ -56,74 +56,90 @@ workflow RIBOSEQ {
 
     // TODO: handle annotations from samplesheet
 
-    SELECTION(
-        ch_reads,
-        params.bowtie2_index_path,
-        params.contaminants_fasta,
-        params.keep_sam,
-        params.outdir
-        )
+    SELECTION(ch_reads,
+              params.bowtie2_index_path,
+              params.contaminants_fasta,
+              params.keep_sam,
+              params.outdir
+              )
 
     rpf_reads = SELECTION.out.rpf_reads
 
-    ALIGNMENT(
-        rpf_reads,
-        params.reference_fasta,
-        params.star_index_path,
-        params.reference_gtf,
-        params.run_price,
-        params.run_orfquant,
-        params.outdir
-        )
+    ALIGNMENT(rpf_reads,
+              params.reference_fasta,
+              params.star_index_path,
+              params.reference_gtf,
+              params.run_price,
+              params.run_orfquant,
+              params.outdir
+              )
 
     orfquant_bams = ALIGNMENT.out.bam_list
     price_bams = ALIGNMENT.out.bam_list_end2end
     bamlist = ALIGNMENT.out.price_filelist
 
-    //def orfquant_annotation_exists = params.orfquant_annotation.exists()
-/*
-    RIBOQC(
-           orfquant_annotation_exists,
+    def orfquant_annotation_exists = file(params.orfquant_annotation).isFile()
+
+    RIBOQC(params.orfquant_annotation,
+           params.orfquant_annot_package,
+           params.package_install_loc,
+           params.pandoc_dir,
            orfquant_bams,
+           // This was for testing RiboseQC / ORFquant annotation, does not seem to work
+           orfquant_annotation_exists,
            params.reference_gtf,
            params.reference_twobit,
            params.outdir,
-           params.orfquant_prefix,
-           contaminants,
-           star_output,
-           samtools_output
+           params.orfquant_prefix
+           // For multiQC and figures
+           // contaminants,
+           // star_output,
+           // samtools_output
            )
 
-
     if (params.run_orfquant) {
-        ORFQUANT(RIBOQC.out.for_orfquant_files)
+        ORFQUANT(RIBOQC.out.for_orfquant_files,
+                 RIBOQC.out.rannot_ch,
+                 RIBOQC.out.package_ch,
+                 params.package_install_loc,
+                 params.pandoc_dir,
+                 params.orfquant_prefix,
+                 params.outdir
+                 )
+        
+        // This is untested
+        EXPRESSION(ORFQUANT.out.orfquant_orfs,
+                   RIBOQC.out.psites,
+                   params.outdir
+                   )
     }
-*/
+
     if (params.run_price) {
-        PRICE(
-            bamlist,
-            params.price_index_path,
-            params.reference_fasta,
-            params.reference_gtf,
-            params.outdir,
-            params.price_prefix,
-            params.gedi_exec_loc
-            )
+        PRICE(bamlist,
+              params.price_index_path,
+              params.reference_fasta,
+              params.reference_gtf,
+              params.outdir,
+              params.price_prefix,
+              params.gedi_exec_loc
+              )
+        
+        // This is untested
+        PRICE_EXPRESSION = EXPRESSION(PRICE.out.price_orfs,
+                                      RIBOQC.out.psites,
+                                      params.outdir
+                                      )
     }
+
 /*
     ANNOTATION(
-        ORFQUANT.out.orfquant_results,
-        PRICE.out.price_results,
-        gtf_ch,
-        params.run_orfquant,
-        params.run_price
-    )
-    
-    EXPRESSION(
-        ANNOTATION.out.annotated_orfs,
-        ALIGNMENT.out.bam_files,
-        params.run_orfquant,
-        params.run_price
-    ) */
+               ORFQUANT.out.orfquant_results,
+               PRICE.out.price_results,
+               PRICE_EXPRESSION.out.
+               ORFQUANT_EXPRESSION.out.
+               params.run_orfquant,
+               params.run_price
+               )
+*/
 
 }
