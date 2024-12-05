@@ -36,8 +36,6 @@ process orfquant {
 
     output:
     path "${orfquant_prefix}_final_ORFquant_results", emit: orfquant_results_file
-    path "${orfquant_prefix}_Detected_ORFs.gtf", emit: orfquant_gtf
-    path "${orfquant_prefix}_Protein_sequences.fasta", emit: orfquant_fasta
     path "${orfquant_prefix}_*"
 
     script:
@@ -50,7 +48,32 @@ process orfquant {
     ${pandoc_dir} \
     ${orfquant_annot_package} \
     ${package_install_loc} \
-    "TRUE"
+    "FALSE"
     # Only set to TRUE for testing purposes
+    """
+}
+
+process fix_orfquant {
+
+    // Fixes ORFquant GTF which has incorrect names
+
+    label "fix_orfquant"
+    publishDir "${outdir}/orfquant", mode: 'copy'
+
+    input:
+    val orfquant_results_file
+    val orfquant_prefix
+    val rannot
+
+    output:
+    path "${orfquant_prefix}_Detected_ORFs_fixed.gtf", emit: orfquant_gtf
+    path "${orfquant_prefix}_Protein_sequences_fixed.fasta", emit: orfquant_fasta
+
+    script:
+    """
+    fix_orfquant_output.R \
+    ${orfquant_results_file} \
+    ${rannot} \
+    ${orfquant_prefix}
     """
 }

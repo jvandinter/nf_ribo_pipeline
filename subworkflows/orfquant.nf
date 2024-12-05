@@ -1,4 +1,4 @@
-include { prepare_orfquant; orfquant } from '../modules/orfquant.nf'
+include { prepare_orfquant; orfquant; fix_orfquant } from '../modules/orfquant.nf'
 include { write_psites_paths } from '../modules/helperFunctions.nf'
 
 workflow ORFQUANT {
@@ -33,9 +33,15 @@ workflow ORFQUANT {
              outdir
              )
 
-    orfquant_orfs = orfquant.out.orfquant_gtf
+    fix_orfquant(orfquant.out.orfquant_results_file,
+                 orfquant_annotation,
+                 orfquant_prefix)
+
+    orfquant_orfs = fix_orfquant.out.orfquant_gtf
+    orfquant_results_file = orfquant.out.orfquant_results_file
 
     emit:
     orfquant_orfs
+    orfquant_results_file
 
 }
