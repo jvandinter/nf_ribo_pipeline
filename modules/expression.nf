@@ -3,13 +3,13 @@ process intersect_psites {
     // Intersect a reference BED with p-site positions with p-sites from a sample
 
     tag "${meta.sample_id}"
-    label "sample_psites"
+    label "intersect_psites"
     publishDir "${outdir}/bedfiles", mode: 'copy'
 
     input:
-    sample_psite_bed
-    ref_psite_bed
-    outdir
+    tuple val(meta), val(sample_psite_bed)
+    val ref_psite_bed
+    val outdir
 
     output:
     tuple val(meta), path("${meta.sample_id}_intersect.bed"), emit: sample_intersect_bed
@@ -33,19 +33,25 @@ process ppm_matrix {
     // Create a matrix object for raw P-sites and PPM for each ORF and
     // each sample included in the cohort
 
+    label "calculate_matrix"
+    publishDir "${outdir}/orf_expression", mode: 'copy'
+
     input:
-    ref_psite_bed
-    sample_intersect_bed
-    ref_name
+    val ref_psite_bed
+    val sample_intersect_bed
+    val orfcaller_name
+    val outdir
 
     output:
+    path("${orfcaller_name}_psites_permillion.txt"), emit: ppm_matrix
+    path("${orfcaller_name}_psites.txt"), emit: psite_matrix
 
     script:
 
     """
-    Rscript calculate_psites_percodon_p_all.R \
+    Rscript psite_matrix.R \
     "${ref_psite_bed}" \
     "${sample_intersect_bed}" \
-    "${ref_name}"
+    "${orfcaller_name}"
     """
 }

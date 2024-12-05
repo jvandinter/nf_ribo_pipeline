@@ -78,12 +78,12 @@ def checkInputFiles() {
     log.info "\n==========================\n"
 }
 
-process write_psites_paths {
+process write_collected_paths {
     input:
     val collected_paths
 
     output:
-    path "file_paths.txt", emit: psites_file_channel
+    path "file_paths.txt", emit: collected_file_channel
 
     script:
     """

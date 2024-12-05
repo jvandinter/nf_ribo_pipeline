@@ -108,10 +108,11 @@ workflow RIBOSEQ {
                  )
         
         // This is untested
-        EXPRESSION(ORFQUANT.out.orfquant_orfs,
-                   RIBOQC.out.psites,
-                   params.outdir
-                   )
+        ORFQUANT_EXPRESSION = EXPRESSION(ORFQUANT.out.orfquant_orfs,
+                                         RIBOQC.out.riboseqc_results,
+                                         params.package_install_loc,
+                                         params.outdir
+                                         )
     }
 
     if (params.run_price) {
@@ -126,7 +127,8 @@ workflow RIBOSEQ {
         
         // This is untested
         PRICE_EXPRESSION = EXPRESSION(PRICE.out.price_orfs,
-                                      RIBOQC.out.psites,
+                                      RIBOQC.out.riboseqc_results,
+                                      params.package_install_loc,
                                       params.outdir
                                       )
     }

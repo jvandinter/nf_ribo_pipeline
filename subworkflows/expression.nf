@@ -5,14 +5,15 @@ workflow EXPRESSION {
 
     take:
     orfs
-    psites
-    orfcaller_name
+    riboseqc_results
+    package_install_loc
     outdir
 
     main:
 
     // Create sample P-site files
-    sample_psites(psites,
+    sample_psites(riboseqc_results,
+                  package_install_loc,
                   outdir
     )
     
@@ -27,22 +28,26 @@ workflow EXPRESSION {
                      outdir
     )
 
+    intersect_psites.out.intersect_bed
+    .map { meta, path -> path }
+    .collect()
+    .set { collected_paths }
+    write_collected_paths(collected_paths)
+
     // Calculate PPM matrices
     ppm_matrix(ref_psites.out.ref_bed,
                orfcaller_name,
-               intersect_psites.out.intersect_bed,
+               collected_paths,
                outdir
     )
 
     ref_bed = ref_psites.out.ref_bed
-    ppm_matrix_out = ppm_matrix.out.
-    raw_matrix_out = ppm_matrix.out.
+    ppm_matrix_out = ppm_matrix.out.ppm_matrix
+    raw_matrix_out = ppm_matrix.out.psite_matrix
 
     emit:
     ref_bed
     ppm_matrix_out
     raw_matrix_out
-
-
 
 }

@@ -1,5 +1,11 @@
+#!/usr/bin/env Rscript
 
-package_install_loc <- "/hpc/local/Rocky8/pmc_vanheesch/Rstudio_Server_Libs/Rstudio_4.1.2_libs"
+args = commandArgs(trailingOnly=TRUE)
+
+riboseqc_file <- args[1]
+package_install_loc <- args[2]
+
+# Set location of installed packages for this R version
 paths <- c(package_install_loc,.libPaths())
 .libPaths(paths)
 
@@ -7,17 +13,17 @@ suppressPackageStartupMessages({
     library(RiboseQC)
 })
 
-args = commandArgs(trailingOnly=TRUE)
-
-riboseqc_file <- args[1]
-outdir <- args[2]
-
+# Get basename of the file
 fname <- gsub(pattern = "_for_ORFquant", x = basename(riboseqc_file), replacement = "")
 
+# ORFquant files are R object files
 load(riboseqc_file)
 
-P_sites <- data.frame(for_ORFquant$P_sites_uniq)
-bed <- data.frame(P_sites$seqnames, P_sites$start, P_sites$end, ".", P_sites$score, P_sites$strand)
+# Extract p-sites from list of objects
+p_sites <- data.frame(for_ORFquant$p_sites_uniq)
+
+# Extract columns to create BED file
+bed <- data.frame(p_sites$seqnames, p_sites$start, p_sites$end, ".", p_sites$score, p_sites$strand)
 colnames(bed) <- c("chrom", "chromStart", "chromEnd", "name", "score", "strand")
 
-data.table::fwrite(bed, paste0(outdir, fname, "_psites.bed"), quote = F, sep = "\t", col.names = F, row.names = F)
+data.table::fwrite(bed, paste0(fname, "_psites.bed"), quote = F, sep = "\t", col.names = F, row.names = F)
