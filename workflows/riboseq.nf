@@ -20,7 +20,8 @@ include { ALIGNMENT } from '../subworkflows/alignment.nf'
 include { RIBOQC } from '../subworkflows/riboqc.nf'
 include { ORFQUANT } from '../subworkflows/orfquant.nf'
 include { PRICE } from '../subworkflows/price.nf'
-include { EXPRESSION } from '../subworkflows/expression.nf'
+// Expression and annotation still untested
+//include { EXPRESSION } from '../subworkflows/expression.nf'
 //include { ANNOTATION } from '../subworkflows/annotation.nf'
 
 // Define input channel
@@ -107,12 +108,12 @@ workflow RIBOSEQ {
                  params.outdir
                  )
         
-        // This is untested
+        /* // This is untested
         ORFQUANT_EXPRESSION = EXPRESSION(ORFQUANT.out.orfquant_orfs,
                                          RIBOQC.out.riboseqc_results,
                                          params.package_install_loc,
                                          params.outdir
-                                         )
+                                         ) */
     }
 
     if (params.run_price) {
@@ -125,12 +126,12 @@ workflow RIBOSEQ {
               params.gedi_exec_loc
               )
         
-        // This is untested
+        /* // This is untested
         PRICE_EXPRESSION = EXPRESSION(PRICE.out.price_orfs,
                                       RIBOQC.out.riboseqc_results,
                                       params.package_install_loc,
                                       params.outdir
-                                      )
+                                      ) */
     }
 
 /*

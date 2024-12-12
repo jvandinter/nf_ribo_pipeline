@@ -15,12 +15,12 @@ workflow ORFQUANT {
     main:
 
     orfquant_psites
-    .map { meta, path -> path } // Extract only the paths
-    .collect()                   // Collect all paths into a single list
-    .set { collected_paths }     // Set this list into a new channel
-    write_psites_paths(collected_paths)
+    .map { meta, path -> path }
+    .collect()
+    .set { collected_paths }
+    write_collected_paths(collected_paths)
 
-    prepare_orfquant(write_psites_paths.out.psites_file_channel,
+    prepare_orfquant(write_collected_paths.out.collected_file_channel,
                      orfquant_prefix,
                      outdir)
 

@@ -18,7 +18,7 @@ process ref_psites {
     python3 calculate_psite_coords_final.py \
     -i ${gtf} \
     -a "no" \
-    -o "`pwd`" \
+    -o `pwd` \
     -t "ORF_id"
 
     sort -k1,1 -k2,2n "${ref_base}.gtf_psites_plus_partial.bed" > "${ref_base}.gtf_psites_p0.sorted.bed"

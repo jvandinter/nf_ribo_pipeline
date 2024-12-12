@@ -1,6 +1,6 @@
 include { riboseqc; create_annotation } from "../modules/riboseqc.nf"
-include { multiqc } from "../modules/multiqc.nf"
-include { create_qc_plots } from '../modules/qcplots.nf'
+// include { multiqc } from "../modules/multiqc.nf"
+// include { create_qc_plots; riboseqc_plots } from '../modules/qcplots.nf'
 
 workflow RIBOQC {
 
@@ -47,29 +47,13 @@ using multiQC and riboseQC
              package_ch,
              package_install_loc)
 
-    // Check annotation status
-    if(!orfquant_annotation_exists) {
-        // Create riboseqc annotation
-        create_annotation(gtf,
-                          twobit,
-                          package_install_loc,
-                          orfquant_prefix)
-        rannot_ch = create_annotation.out.orfquant_annotation
-        package_ch = create.annotation.out.annotation_package
-    } else {
-        rannot_ch = orfquant_annotation
-        package_ch = orfquant_annot_package
-    }
-
-    // Create riboseqc files
-    riboseqc(orfquant_bams,
-             outdir,
-             rannot_ch,
-             pandoc_dir,
-             package_ch,
-             package_install_loc)
-
     /*
+    // Create riboseqc HTML
+    riboseqc_plots(outdir,
+                   pandoc_dir,
+                   render_file,
+                   orfquant_prefix)
+
     // run multiqc
     multiqc(samtools,
             star,
@@ -83,10 +67,12 @@ using multiQC and riboseQC
     */
     // Gather output tuples into single list
     for_orfquant_files = riboseqc.out.orfquant_psites
+    riboseqc_results = riboseqc.out.data_files
 
     emit:
-    rannot_ch
-    package_ch
-    for_orfquant_files // files for ORFquant
+    rannot_ch // Used R annotation
+    package_ch // used R package
+    for_orfquant_files // Files for ORFquant
+    riboseqc_results // Files for expression calculations
 
 }

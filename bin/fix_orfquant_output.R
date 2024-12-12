@@ -1,5 +1,8 @@
 #!/usr/bin/env Rscript
 
+# This script fixes the ORFquant GTF output
+# It has some incorrect ID values for the ORFs
+
 suppressPackageStartupMessages({
     library(dplyr)
     library(ORFquant)

@@ -120,7 +120,7 @@ process align {
         --sjdbGTFfile ${gtf} \
         --readFilesIn ${reads} \
         --outSAMattrRGline ID:${sample_id} LB:${sample_id} PL:IllUMINA SM:${sample_id} \
-        --outFileNamePrefix "${sample_id}/${sample_id}." \
+        --outFileNamePrefix "${sample_id}/${sample_id}.local." \
         --runThreadN $task.cpus \
         ${star_params}
         """
