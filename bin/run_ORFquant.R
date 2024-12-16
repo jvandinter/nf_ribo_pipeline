@@ -79,10 +79,11 @@ ORFquant_analysis <- function(for_ORFquant_file,
 }
 
 # Run script --------------------------------------------------------------
-if (!require(basename(annotation_package), character.only = TRUE)) {
-  install.packages(annotation_package,
-                   repos = NULL, type = "source")
-}
+# See if script works without annotation
+# if (!require(basename(annotation_package), character.only = TRUE)) {
+#   install.packages(annotation_package,
+#                    repos = NULL, type = "source")
+# }
 
 ORFquant_analysis(for_ORFquant_file = for_ORFquant_file,
                   sample_id = pool_id,
