@@ -1,5 +1,5 @@
 include { prepare_orfquant; orfquant; fix_orfquant } from '../modules/orfquant.nf'
-include { write_colleced_paths } from '../modules/helperFunctions.nf'
+include { write_collected_paths } from '../modules/helperFunctions.nf'
 
 workflow ORFQUANT {
 
