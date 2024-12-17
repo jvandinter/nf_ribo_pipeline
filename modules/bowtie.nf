@@ -10,17 +10,19 @@ process bowtie2_index {
     val outdir             // Output directory
 
     output:
-    val "bowtie2_index" , emit: bowtie2_index_prefix
-    path "bowtie2_index*.bt2"
+    val "bowtie2_index/bowtie2_index", emit: bowtie2_index_prefix
+    path "bowtie2_index/bowtie2_index*.bt2"
 
     script:
     """
+
+    mkdir "bowtie2_index"
     bowtie2-build \
     -f \
     --seed 24 \
     --threads $task.cpus \
     ${contaminants_fasta} \
-    bowtie2_index
+    "bowtie2_index/bowtie2_index"
 
     """
 }
